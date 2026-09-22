@@ -7,22 +7,24 @@
 ---
 
 ## 1. Contexto de Negócio e Perguntas (Etapa 2 e 4.1)
+
 ### Contexto
-[Descreva aqui o problema de negócio de forma clara. Exemplo: "Análise do mercado imobiliário da cidade de São Paulo para identificar variáveis que impactam o preço por metro quadrado."]
+A Olist é uma startup brasileira que atua como um departamento de vendas (marketplace integrator) para pequenos negócios de todo o Brasil. O objetivo deste projeto de Engenharia de Dados é construir um pipeline funcional na nuvem (Databricks) para integrar, limpar e modelar o histórico de pedidos da plataforma. A solução visa fornecer uma camada analítica confiável para apoiar tomadas de decisão estratégicas sobre logística, desempenho de vendas e comportamento de compra dos clientes.
 
 ### Perguntas de Negócio
-1. [Pergunta 1 - ex: Qual a relação entre a metragem e o preço de venda?]
-2. [Pergunta 2 - ex: Imóveis próximos do metro possuem um valor por m² significativamente superior?]
-3. [Pergunta 3 - ex: Qual o impacto do número de vagas de garagem no valor final?]
+1. **Desempenho Logístico Regional:** Qual é o tempo médio de entrega (em dias) e o valor médio de frete pago por estado (UF) de destino do cliente?
+2. **Análise Financeira e Meios de Pagamento:** Qual é a distribuição do faturamento total por tipo de pagamento (cartão de crédito, boleto, voucher, etc.) e o número médio de parcelas escolhido pelos clientes?
+3. **Categorias de Maior Impacto:** Quais são as 10 categorias de produtos que geraram o maior volume de faturamento total e qual o valor médio gasto por item dentro dessas categorias?
 
 ### Origem e Licença dos Dados Brutos
-* **Fonte dos dados:** [Ex: Kaggle / Portal da Transparência / IMDB]
-* **Link de acesso:** [Inserir URL da fonte]
-* **Licença:** [Ex: CC0: Public Domain / MIT / Uso Académico]
-* **Estrutura dos Dados Brutos:**
-  * `coluna_1` (string): Descrição da coluna.
-  * `coluna_2` (numeric): Descrição da coluna.
-
+* **Fonte dos dados:** [Kaggle - Brazilian E-Commerce Public Dataset by Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce)
+* **Licença de Uso:** CC BY-NC-SA 4.0 (Creative Commons - Atribuição-NãoComercial-CompartilhaIgual)
+* **Estrutura Resumida dos Arquivos Utilizados:**
+  * `olist_orders_dataset.csv`: Registra os pedidos (`order_id`), status do pedido, ID do cliente e carimbos de data/hora (compra, aprovação, envio, entrega).
+  * `olist_order_items_dataset.csv`: Detalha os itens de cada pedido (`order_id`, `product_id`, `price`, `freight_value`).
+  * `olist_products_dataset.csv`: Armazena os atributos dos produtos (`product_id`, `product_category_name`, dimensões, peso).
+  * `olist_customers_dataset.csv`: Mapeia a localização dos clientes (`customer_id`, `customer_city`, `customer_state`).
+  * `olist_order_payments_dataset.csv`: Contém as transações financeiras dos pedidos (`payment_type`, `payment_installments`, `payment_value`).
 ---
 
 ## 2. Carga dos Dados (Etapa 4.2)
