@@ -1,117 +1,134 @@
-# MVP: Pipeline de Dados na Nuvem - [Nome do Seu Projeto]
+# MVP: Construção de um Pipeline de Dados na Nuvem (Databricks / Lakehouse)
 
-**Aluno:** [Seu Nome Completo]  
-**Plataforma Utilizada:** Databricks Free Edition  
-**Linguagens Utilizadas:** PySpark / SQL / Python  
+> **Autor:** Laura Siebert Bonilauri  
+> **Curso / Disciplina:** Engenharia de Dados  
+> **Plataforma:** Databricks Free Edition (Apache Spark & Delta Lake)  
 
 ---
 
-## 1. Contexto de Negócio e Perguntas (Etapa 2 e 4.1)
+## 1. Contexto de Negócios e Perguntas (Etapa 2 e 4.1)
 
-### Contexto
-A Olist é uma startup brasileira que atua como um departamento de vendas (marketplace integrator) para pequenos negócios de todo o Brasil. O objetivo deste projeto de Engenharia de Dados é construir um pipeline funcional na nuvem (Databricks) para integrar, limpar e modelar o histórico de pedidos da plataforma. A solução visa fornecer uma camada analítica confiável para apoiar tomadas de decisão estratégicas sobre logística, desempenho de vendas e comportamento de compra dos clientes.
+### Contexto do Problema
+O objetivo deste projeto é analisar o desempenho operacional e logístico de uma operação de e-commerce brasileira. O dataset original contém registros de pedidos, clientes, produtos e pagamentos. 
+
+A partir do armazenamento bruto até o refino em uma Arquitetura Medalhão (Bronze ➔ Silver ➔ Gold), o pipeline visa responder a dúvidas fundamentais sobre o nível de serviço de entrega, rentabilidade por categoria de produto e preferências de meios de pagamento.
 
 ### Perguntas de Negócio
-1. **Desempenho Logístico Regional:** Qual é o tempo médio de entrega (em dias) e o valor médio de frete pago por estado (UF) de destino do cliente?
-2. **Análise Financeira e Meios de Pagamento:** Qual é a distribuição do faturamento total por tipo de pagamento (cartão de crédito, boleto, voucher, etc.) e o número médio de parcelas escolhido pelos clientes?
-3. **Categorias de Maior Impacto:** Quais são as 10 categorias de produtos que geraram o maior volume de faturamento total e qual o valor médio gasto por item dentro dessas categorias?
+1. **Logística por Estado (UF):** Qual é o tempo médio de entrega e qual é o percentual de atrasos de pedidos por estado brasileiro?
+2. **Desempenho de Vendas:** Quais são as 10 categorias de produtos mais vendidas e qual o faturamento total gerado por cada uma?
+3. **Comportamento Financeiro:** Qual é a distribuição das vendas por método de pagamento e o valor médio gasto (ticket médio) em cada modalidade?
 
-### Origem e Licença dos Dados Brutos
-* **Fonte dos dados:** [Kaggle - Brazilian E-Commerce Public Dataset by Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce)
-* **Licença de Uso:** CC BY-NC-SA 4.0 (Creative Commons - Atribuição-NãoComercial-CompartilhaIgual)
-* **Estrutura Resumida dos Arquivos Utilizados:**
-  * `olist_orders_dataset.csv`: Registra os pedidos (`order_id`), status do pedido, ID do cliente e carimbos de data/hora (compra, aprovação, envio, entrega).
-  * `olist_order_items_dataset.csv`: Detalha os itens de cada pedido (`order_id`, `product_id`, `price`, `freight_value`).
-  * `olist_products_dataset.csv`: Armazena os atributos dos produtos (`product_id`, `product_category_name`, dimensões, peso).
-  * `olist_customers_dataset.csv`: Mapeia a localização dos clientes (`customer_id`, `customer_city`, `customer_state`).
-  * `olist_order_payments_dataset.csv`: Contém as transações financeiras dos pedidos (`payment_type`, `payment_installments`, `payment_value`).
+### Estrutura dos Dados Brutos
+A fonte de dados é composta por arquivos brutos no formato CSV:
+- `orders`: Dados de pedidos (datas de compra, aprovação, envio e entrega).
+- `customers`: Informações de localização dos clientes (cidade, estado, ID).
+- `order_items`: Itens pertencentes a cada pedido (ID do produto, preço, frete).
+- `products`: Catálogo de produtos (categorias, dimensões e pesos).
+- `payments`: Transações financeiras dos pedidos (tipo de pagamento, parcelas, valor).
+
+### Licença dos Dados
+Os dados utilizados são disponibilizados sob a licença pública **CC0 1.0 Universal (Domínio Público)** / **Open Data Commons**, permitindo o uso acadêmico, comercial e de modificação sem restrições de direitos autorais.
+
 ---
 
 ## 2. Carga dos Dados (Etapa 4.2)
-### Processo de Ingestão
-[Explique como o ficheiro foi carregado no Databricks. Exemplo: "Os dados foram descarregados no formato CSV e carregados para um Volume do Unity Catalog no Databricks Free Edition. Em seguida, o notebook `01_ingestao_bronze` leu esses dados e gravou a tabela na camada Bronze em formato Delta Lake."]
 
-* **Script de Ingestão:** [`notebooks/01_ingestao_bronze.py`](notebooks/01_ingestao_bronze.py)
-* **Evidência de Carregamento:**
-  ![Carregamento no Databricks](docs/screenshots/ingestao_bronze.png)
+A carga inicial dos dados brutos foi realizada fazendo o upload dos arquivos CSV para o ambiente de nuvem do Databricks, armazenando-os diretamente em um **Volume do Unity Catalog** (`workspace.default.bronze_volume`).
+
+Esse processo garante o armazenamento centralizado e persistente da camada **Bronze**, servindo como fonte imutável (dados exatamente como vieram da origem) para os processamentos posteriores com PySpark.
+
+*Script de referência de carga e criação das tabelas Delta Bronze:* [`notebooks/01_bronze_ingestion.py`](./notebooks)
+
+![Interface do Databricks mostrando os arquivos brutos armazenados no Volume](./assets/screenshot_01_volume_bronze.png)  
+*Figura 1: Evidência dos arquivos brutos salvos no Volume do Databricks (Camada Bronze).*
 
 ---
 
 ## 3. Modelagem e Catálogo de Dados (Etapa 4.3)
-### Arquitetura de Modelagem
-[Explique a abordagem escolhida. Exemplo: Esquema Estrela (Star Schema) composto por 1 Tabela Fato e 2 Tabelas Dimensão.]
+
+O projeto adota a **Arquitetura Medalhão** dentro do conceito de **Data Lakehouse**:
+- **Bronze:** Dados brutos em arquivos CSV armazenados no Volume.
+- **Silver:** Tabelas Delta limpas, deduplicadas, padronizadas e tipadas (`silver_orders`, `silver_customers`, `silver_order_items`, `silver_products`, `silver_payments`).
+- **Gold:** Tabelas modeladas em **Esquema Estrela (Star Schema)** otimizadas para consultas analíticas de negócio (`fact_orders`, `dim_customers`, `dim_products`).
 
 ### Catálogo de Dados (Unity Catalog)
 
-#### Tabela: `gold.fato_vendas`
-| Nome do Campo | Tipo de Dado | Domínio / Valores Esperados | Descrição | Linhagem (Origem) |
-| :--- | :--- | :--- | :--- | :--- |
-| `id_venda` | INT | Inteiro Único > 0 | Identificador único da transação | `bronze.vendas_raw.id` |
-| `valor_venda` | DECIMAL(10,2) | > 0 | Valor final do imóvel em BRL | `bronze.vendas_raw.price` |
-| `data_venda` | DATE | AAAA-MM-DD | Data em que a venda foi realizada | Tratado a partir de `bronze.vendas_raw.timestamp` |
+#### Tabela Fato: `fact_orders` (Camada Gold)
+- **Descrição:** Contém o consolidado de métricas operacionais e logísticas de cada pedido.
+- `order_id` (STRING): Chave primária do pedido.
+- `customer_id` (STRING): Chave estrangeira para a dimensão de clientes.
+- `order_purchase_timestamp` (TIMESTAMP): Data e hora da compra.
+- `delivery_time_days` (DOUBLE): Tempo total de entrega em dias.
+- `is_delayed` (INT): Flag booleana indicando se a entrega atrasou (`1` = Sim, `0` = Não).
+- `total_items` (INT): Quantidade de itens no pedido.
+- `total_products_value` (DOUBLE): Valor total dos produtos do pedido em BRL.
 
-#### Tabela: `gold.dim_imovel`
-| Nome do Campo | Tipo de Dado | Domínio / Valores Esperados | Descrição | Linhagem (Origem) |
-| :--- | :--- | :--- | :--- | :--- |
-| `id_imovel` | INT | Inteiro Único | Chave primária do imóvel | `bronze.imoveis_raw.id` |
-| `area_m2` | FLOAT | > 0 | Área total em metros quadrados | `bronze.imoveis_raw.area` |
+#### Tabela Dimensão: `dim_customers` (Camada Gold)
+- **Descrição:** Informações geográficas dos clientes.
+- `customer_id` (STRING): Chave primária do cliente.
+- `customer_city` (STRING): Cidade do cliente.
+- `customer_state` (STRING): Unidade Federativa (UF) do cliente (domínio: 27 UFs do Brasil).
 
-* **Evidência do Catálogo no Databricks:**
-  ![Unity Catalog](docs/screenshots/unity_catalog.png)
+#### Tabela Dimensão: `dim_products` (Camada Gold)
+- **Descrição:** Cadastro e categorização das mercadorias.
+- `product_id` (STRING): Chave primária do produto.
+- `product_category_name` (STRING): Nome padronizado da categoria do produto.
+
+![Visão das tabelas e esquemas estruturados no Unity Catalog do Databricks](./assets/screenshot_02_unity_catalog.png)  
+*Figura 2: Estrutura do modelo de dados e tabelas persistidas no catálogo do Databricks.*
 
 ---
 
 ## 4. Pipeline de Dados (Etapa 4.4)
-### Organização do Pipeline ETL
-[Explique como o fluxo foi divido. Exemplo: "O pipeline foi estruturado em 3 notebooks distintos representando a evolução Medalhão (Bronze -> Silver -> Gold)."]
 
-1. **Ingestão (Bronze):** Preservação do formato original com adição do campo `dt_processamento`.
-2. **Tratamento (Silver):** Remoção de registos com chaves nulas e padronização de campos de data.
-3. **Agregação (Gold):** Cruzamento das tabelas limpas para criação do modelo final pronto para consulta.
+O pipeline ETL (Extract, Transform, Load) foi desenvolvido em linguagem **PySpark** e **SQL** no Databricks, estruturado em módulos claros de transformação:
 
-* **Scripts do Pipeline:**
-  * [`01_ingestao_bronze.py`](notebooks/01_ingestao_bronze.py)
-  * [`02_limpeza_silver.py`](notebooks/02_limpeza_silver.py)
-  * [`03_modelagem_gold.py`](notebooks/03_modelagem_gold.py)
-* **Evidência das Tabelas Persistidas (Delta Lake):**
-  ![Tabelas Persistidas](docs/screenshots/tabelas_persistidas.png)
+1. **Camada Bronze ➔ Silver:** 
+   - Leitura dos arquivos CSV do Volume.
+   - Tratamento de valores nulos e remoção de registros duplicados.
+   - Conversão de tipos de dados (Strings de datas convertidas para `TimestampType`).
+   - Padronização de textos e categorias.
+   - Salvamento no formato **Delta Lake** na camada Silver.
+
+2. **Camada Silver ➔ Gold:**
+   - Cálculo de regras de negócio: cálculo da diferença em dias entre a data do pedido e a entrega realizada (`delivery_time_days`), e verificação de atraso logístico (`is_delayed`).
+   - Agregação de valores de itens e frete por pedido.
+   - Criação e persistência das tabelas Fato e Dimensão na camada Gold.
+
+*Scripts completos do pipeline:*
+- [`notebooks/01_bronze_to_silver.py`](./notebooks)
+- [`notebooks/02_silver_to_gold.py`](./notebooks)
+
+![Execução do notebook de pipeline e persistência das tabelas Delta](./assets/screenshot_03_pipeline_execution.png)  
+*Figura 3: Execução bem-sucedida das células de código salvando as tabelas Delta na nuvem.*
 
 ---
 
 ## 5. Qualidade de Dados (Etapa 4.5)
-### Diagnóstico e Tratamentos
 
-| Atributo / Dimensão | Problema Detetado | Ação de Tratamento Realizada |
-| :--- | :--- | :--- |
-| **Completude** | 5% de valores nulos no campo `bairro` | Preenchido com a categoria `'Não Informado'` |
-| **Consistência** | Datas em formatos mistos (`DD/MM/AAAA` e `AAAA-MM-DD`) | Padronizado para o tipo `DATE` (`AAAA-MM-DD`) no PySpark |
-| **Unicidade** | Registos duplicados identificados na camada Bronze | Aplicação do método `.dropDuplicates(['id_venda'])` na Silver |
-| **Outliers** | Preços de imóveis registados com valor R$ 0.00 | Filtragem aplicada para aceitar apenas `valor > 1000` |
+Durante a fase de diagnóstico e refino da camada Silver, foram identificados e tratados os seguintes aspectos de qualidade:
+
+- **Completude:** Identificados valores nulos nas colunas de datas de entrega (`order_delivered_customer_date`). Pedidos com entregas não concluídas/canceladas foram filtrados para a análise de tempo logístico.
+- **Consistência e Tipagem:** Os campos de datas originais do CSV vieram formatados como texto e foram convertidos nativamente para `TimestampType` no PySpark, permitindo cálculos de intervalo de datas (`datediff`).
+- **Unicidade:** Removidas duplicatas de clientes e produtos garantindo a integridade referencial do Esquema Estrela (chaves primárias únicas nas dimensões).
+- **Tratamento de Categóricos:** Padronização das siglas de estados (UF) em maiúsculas e preenchimento de nomes de categorias ausentes com o rótulo `'outros'`.
 
 ---
 
 ## 6. Análise de Dados (Etapa 4.5)
-### Respostas às Perguntas de Negócio
 
-#### Pergunta 1: [Descrição da Pergunta 1]
+Abaixo estão as consultas SQL executadas na camada Gold para responder às perguntas do objetivo do projeto:
 
-Evidência do Resultado:
+### 1. Tempo Médio de Entrega e Taxa de Atraso por Estado (UF)
 
-Discussão do Resultado:
-[Apresente a interpretação dos dados obtidos e a ligação com o problema de negócio.]
-
-Pergunta 2: [Descrição da Pergunta 2]
-Evidência do Resultado:
-
-Discussão do Resultado:
-[Análise interpretativa dos números encontrados.]
-
-7. Autoavaliação
-Atingimento dos Objetivos
-[Avaliação sincera se as perguntas originais foram respondidas e se o pipeline cumpriu a função esperada.]
-
-Dificuldades Encontradas
-[Descreva os principais desafios técnicos. Exemplo: "Adaptação à sintaxe do PySpark, configuração de tipos de dados no Unity Catalog ou tratamento de valores omissos."]
-
-Trabalhos Futuros
-[Ideias de evolução para o portfólio. Exemplo: "Automatização do pipeline via Databricks Workflows, ingestão incremental de novos ficheiros e criação de um dashboard no Power BI a conectar diretamente à camada Gold."]
+```sql
+%sql
+SELECT 
+    c.customer_state AS uf,
+    COUNT(f.order_id) AS total_pedidos,
+    ROUND(AVG(f.delivery_time_days), 1) AS tempo_medio_entrega_dias,
+    ROUND((SUM(f.is_delayed) / COUNT(f.order_id)) * 100, 2) AS percentual_atraso
+FROM workspace.default.fact_orders f
+JOIN workspace.default.dim_customers c ON f.customer_id = c.customer_id
+GROUP BY c.customer_state
+ORDER BY tempo_medio_entrega_dias DESC;
