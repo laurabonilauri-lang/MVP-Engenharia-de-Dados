@@ -121,14 +121,43 @@ Abaixo estão as consultas SQL executadas na camada Gold para responder às perg
 
 ### 1. Tempo Médio de Entrega e Taxa de Atraso por Estado (UF)
 
-```sql
-%sql
-SELECT 
-    c.customer_state AS uf,
-    COUNT(f.order_id) AS total_pedidos,
-    ROUND(AVG(f.delivery_time_days), 1) AS tempo_medio_entrega_dias,
-    ROUND((SUM(f.is_delayed) / COUNT(f.order_id)) * 100, 2) AS percentual_atraso
-FROM workspace.default.fact_orders f
-JOIN workspace.default.dim_customers c ON f.customer_id = c.customer_id
-GROUP BY c.customer_state
-ORDER BY tempo_medio_entrega_dias DESC;
+![Tabela com os resultados da 1° análise](./assets/screenshot_04_questao1.png) 
+Figura 4: Resultado da análise logística por UF gerado no Databricks.
+
+Discussão dos Resultados:
+A análise revela uma forte assimetria logística no Brasil. Estados da Região Norte, como Roraima (RR) e Amapá (AP), apresentam os maiores tempos médios de entrega (29,3 e 27,2 dias, respectivamente). Em contrapartida, estados do Sul e Sudeste possuem prazos substancialmente menores. O percentual de atrasos também varia drasticamente, atingindo picos de mais de 23% em determinados estados do Nordeste (ex: Alagoas), apontando gargalos na malha de distribuição regional.
+
+### 2. Top 10 categorias faturamentos
+
+![Tabela com os resultados da 2° análise](./assets/screenshot_05_questao2.png)
+Figura 5: Resultado da análise de faturamento por categorias.
+
+Discussão dos Resultados:
+As categorias ligadas a bens de consumo duráveis e decoração de interiores lideram a receita total do e-commerce. As categorias "Beleza & Saúde", "Cama, Mesa e Banho" e "Informática & Acessórios" concentram o maior volume absoluto de vendas e faturamento, demonstrando onde a empresa deve focar seus investimentos em marketing e estoque.
+
+### 3. Distribuição dos métodos de pagamento e ticket médio
+
+![Tabela com os resultados da 3° análise](./assets/screenshot_06_questao3.png)
+Figura 6: Resultado da análise de métodos de pagamento e ticket médio.
+
+Discussão dos Resultados:
+O cartão de crédito domina amplamente a preferência dos consumidores em receita total e volume de transações, seguido pelo boleto bancário. O ticket médio das compras efetuadas via cartão de crédito e cartão de débito indica diferenças de perfil de compra: transações parceladas no cartão de crédito viabilizam pedidos de maior valor agregado.
+
+## Autoavaliação
+
+### Atingimento dos Objetivos
+O objetivo principal de construir um pipeline de dados ponta a ponta na nuvem utilizando o Databricks e o conceito de Lakehouse foi totalmente atingido. O fluxo completo desde a ingestão dos dados brutos no Volume até a modelagem analítica e execução das consultas SQL foi concluído com sucesso.
+
+### Dificuldades Encontradas
+- Configuração de Sintaxe e Ambientes: Ajuste na execução de células SQL no Databricks, solucionando pequenos erros de recuo (IndentationError) e padronização de comentários em SQL (-- em vez de #).
+
+- Tratamento de Datas: Necessidade de conversão criteriosa de colunas de data/hora armazenadas originalmente como strings na camada Bronze para cálculo correto dos dias de entrega na camada Gold.
+
+### Trabalhos Futuros
+Para enriquecimento deste projeto em um portfólio profissional, planeja-se:
+
+- Implementar rotinas automatizadas de refras de ingestão com Databricks Auto Loader ou fluxos agendados via Databricks Workflows (Jobs).
+
+- Conectar a camada Gold a um painel interativo de Business Intelligence no Power BI para visualização gráfica dinâmica dos KPIs logísticos e comerciais.
+
+- Adicionar testes automatizados de qualidade de dados usando bibliotecas como Great Expectations.
