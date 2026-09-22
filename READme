@@ -37,9 +37,6 @@ A carga inicial dos dados brutos foi realizada fazendo o upload dos arquivos CSV
 
 Esse processo garante o armazenamento centralizado e persistente da camada **Bronze**, servindo como fonte imutável (dados exatamente como vieram da origem) para os processamentos posteriores com PySpark.
 
-*Script de referência de carga e criação das tabelas Delta Bronze:* 
-[`notebooks/01_bronze_ingestion.ipynb`](./notebooks/01_ingestao_bronze.ipynb)
-
 ![Interface do Databricks mostrando os arquivos brutos armazenados no Volume](assets/screenshot_01_volume_bronze.png)
 
 ![Interface do Databricks mostrando os arquivos brutos armazenados no Volume] (./assets/screenshot_01_volume_bronze.png)
