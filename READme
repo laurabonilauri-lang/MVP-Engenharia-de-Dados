@@ -39,7 +39,7 @@ Esse processo garante o armazenamento centralizado e persistente da camada **Bro
 
 *Script de referência de carga e criação das tabelas Delta Bronze:* [`notebooks/01_bronze_ingestion.py`](./notebooks)
 
-![Interface do Databricks mostrando os arquivos brutos armazenados no Volume](MVP-Engenharia-de-Dados/assets/screenshot_01_volume_bronze.png)  
+![Interface do Databricks mostrando os arquivos brutos armazenados no Volume](assets/screenshot_01_volume_bronze.png)  
 *Figura 1: Evidência dos arquivos brutos salvos no Volume do Databricks (Camada Bronze).*
 
 ---
