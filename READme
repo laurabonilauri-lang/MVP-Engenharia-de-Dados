@@ -37,12 +37,7 @@ A carga inicial dos dados brutos foi realizada fazendo o upload dos arquivos CSV
 
 Esse processo garante o armazenamento centralizado e persistente da camada **Bronze**, servindo como fonte imutável (dados exatamente como vieram da origem) para os processamentos posteriores com PySpark.
 
-![Interface do Databricks mostrando os arquivos brutos armazenados no Volume](screenshot_01_volume_bronze.png)
-
-![Interface do Databricks mostrando os arquivos brutos armazenados no Volume] (./assets/screenshot_01_volume_bronze.png)
-
 ![Interface do Databricks mostrando os arquivos brutos armazenados no Volume](assets/screenshot_01_volume_bronze.png)
-
 
 *Figura 1: Evidência dos arquivos brutos salvos no Volume do Databricks (Camada Bronze).*
 
